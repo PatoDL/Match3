@@ -26,6 +26,17 @@ public class Control : MonoBehaviour
     int savedI;
     int savedJ;
 
+    public void points()
+    {
+        GooglePlayManager.RevealAchievement();
+    }
+
+    private void Awake()
+    {
+        GooglePlayManager.Init();
+        GooglePlayManager.ActivatePlatform();
+    }
+
     void Start()
     {
         m = new Model();
@@ -43,6 +54,8 @@ public class Control : MonoBehaviour
         gridObjs = new GameObject[width,height];
 
         DrawGrid();
+
+        GooglePlayManager.SignIn();
     }
 
     void DrawGrid()
