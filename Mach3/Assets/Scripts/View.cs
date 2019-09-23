@@ -9,6 +9,12 @@ public class View : MonoBehaviour
         baseGO.GetComponent<SpriteRenderer>().sprite = s;
         GameObject go = Instantiate(baseGO);
         go.transform.position = new Vector3(i, j);
+        go.name = i + "-" + j;
         return go;
+    }
+
+    public void EraseTile(int i, int j, GameObject[,] grid)
+    {
+        
     }
 }
