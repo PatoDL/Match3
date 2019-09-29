@@ -8,8 +8,7 @@ public class Control : MonoBehaviour
     public int width;
     public int height;
 
-    GameObject selected1;
-    GameObject selected2;
+
 
     public GameObject BaseGO;
 
@@ -23,39 +22,36 @@ public class Control : MonoBehaviour
     View v;
 
 
-    int savedI;
-    int savedJ;
-
     public void points()
     {
-        GooglePlayManager.RevealAchievement();
+        //GooglePlayManager.RevealAchievement();
     }
 
     private void Awake()
     {
-        GooglePlayManager.Init();
-        GooglePlayManager.ActivatePlatform();
+        //GooglePlayManager.Init();
+        //GooglePlayManager.ActivatePlatform();
     }
 
     void Start()
     {
         m = new Model();
 
-        m.InitData(width,height);
+        m.InitData(width, height);
 
         grid = m.GetGrid();
 
-        while (ReviewData(width, height, false) || ReviewData(width, height, true)) ;
+        while (ReviewData(true, true) || ReviewData(false, true)) ;
 
         m.SetGrid(grid);
 
         v = panel.GetComponent<View>();
 
-        gridObjs = new GameObject[width,height];
+        gridObjs = new GameObject[width, height];
 
         DrawGrid();
 
-        GooglePlayManager.SignIn();
+        //GooglePlayManager.SignIn();
     }
 
     void DrawGrid()
@@ -64,10 +60,28 @@ public class Control : MonoBehaviour
         {
             for (int j = 0; j < width; j++)
             {
+                if (gridObjs[i, j] != null)
+                    Destroy(gridObjs[i, j]);
+            }
+        }
+
+        for (int i = 0; i < height; i++)
+        {
+            for (int j = 0; j < width; j++)
+            {
                 gridObjs[i, j] = v.DrawTile(BaseGO, i, j, colours[grid[i, j]]);
             }
         }
     }
+
+    GameObject selected1;
+    GameObject selected2;
+
+    int s1I;
+    int s1J;
+
+    int s2I;
+    int s2J;
 
     void Update()
     {
@@ -79,53 +93,46 @@ public class Control : MonoBehaviour
             {
                 if (!selected1)
                 {
-                    selected1 = hit.transform.gameObject;
-                    for (int i = 0; i < height; i++)
+                    for (int i = 0; i < width; i++)
                     {
-                        for (int j = 0; j < width; j++)
+                        for (int j = 0; j < height; j++)
                         {
-                            if(selected1 == gridObjs[i,j])
+                            if (hit.transform.gameObject == gridObjs[i, j])
                             {
-                                savedI = i;
-                                savedJ = j;
+                                selected1 = hit.transform.gameObject;
+                                s1I = i;
+                                s1J = j;
+                                break;
                             }
                         }
                     }
                 }
                 else
                 {
-                    selected2 = hit.transform.gameObject;
-                    for (int i = 0; i < height; i++)
+                    for (int i = 0; i < width; i++)
                     {
-                        for (int j = 0; j < width; j++)
+                        for (int j = 0; j < height; j++)
                         {
-                            if (selected2 == gridObjs[i, j])
+                            if (hit.transform.gameObject == gridObjs[i, j])
                             {
-                                if((i== savedI && (j==savedJ || j==savedJ+1 || j==savedJ-1)) || (j==savedJ && (i==savedI || i==savedI+1 || i==savedI-1)))
+                                selected2 = hit.transform.gameObject;
+                                s2I = i;
+                                s2J = j;
+
+                                if (ChangeTile(s1I, s1J, s2I, s2J))
                                 {
-                                    //Sprite s = selected1.GetComponent<SpriteRenderer>().sprite;
-                                    //selected1.GetComponent<SpriteRenderer>().sprite = selected2.GetComponent<SpriteRenderer>().sprite;
-                                    //selected2.GetComponent<SpriteRenderer>().sprite = s;
-
-                                    Destroy(gridObjs[i, j]);
-                                    gridObjs[i, j] = null;
-
-                                    Destroy(gridObjs[savedI, savedJ]);
-                                    gridObjs[savedI, savedJ] = null;
-
-                                    int value = grid[i, j];
-                                    grid[i, j] = grid[savedI, savedJ];
-                                    grid[savedI, savedJ] = value;
-
-                                    gridObjs[i, j] = v.DrawTile(BaseGO, i, j, colours[grid[i, j]]);
-                                    gridObjs[savedI, savedJ] = v.DrawTile(BaseGO, savedI, savedJ, colours[grid[savedI, savedJ]]);
+                                    Debug.Log("si");
                                 }
+                                else
+                                    Debug.Log("no");
+
+                                //DrawGrid();
+
+                                break;
                             }
                         }
                     }
 
-                    //Debug.Log("second");
-                    
                     selected1 = null;
                     selected2 = null;
                 }
@@ -133,47 +140,160 @@ public class Control : MonoBehaviour
         }
     }
 
-    bool ReviewData(int width, int height, bool verticalCheck)
+    bool ChangeTile(int i, int j, int i2, int j2)
     {
-        int repeatedCounter = 1;
-        int value;
-        int prevValue = -1;
+        bool changed = false;
+
+        Destroy(gridObjs[i, j]);
+        gridObjs[i, j] = null;
+
+        Destroy(gridObjs[i2, j2]);
+        gridObjs[i2, j2] = null;
+
+        int sValue = grid[i, j];
+        grid[i, j] = grid[i2, j2];
+        grid[i2, j2] = sValue;
+
+        return changed = ReviewData(false, false) || ReviewData(true, false);
+    }
+
+    void Erase3(int i, int j, bool vertical)
+    {
+        for (int d = 0; d < 3; d++)
+        {
+            if (!vertical)
+            {
+                Destroy(gridObjs[i - d, j]);
+                gridObjs[i - d, j] = null;
+                PassData(i - d, j);
+            }
+            else
+            {
+                Destroy(gridObjs[j, i - d]);
+                gridObjs[j, i - d] = null;
+                PassData(j, i - d);
+            }
+        }
+    }
+
+    void PassData(int i, int j)
+    {
+        while(j < width)
+        {
+            if (j + 1 < width)
+                grid[i, j] = grid[i, j + 1];
+            else
+                grid[i, j] = Random.Range(0, 4);
+
+            j++;
+        }
+    }
+
+    bool ReviewData(bool vertical, bool changeRep)
+    {
+        int aValue;
+        int pValue = -1;
+        int repCounter = 1;
         bool stillChanging = false;
 
-        for(int i=0;i<height;i++)
+        for(int j=0;j<height;j++)
         {
-            for(int j=0;j<width;j++)
+            for(int i=0;i<width;i++)
             {
-                if (!verticalCheck)
-                    value = grid[i, j];
+                if (!vertical)
+                    aValue = grid[i, j];
                 else
-                    value = grid[j, i];
-                if(value == prevValue)
-                {
-                    repeatedCounter++;
-                }
+                    aValue = grid[j, i];
 
-                if(repeatedCounter>=3)
+                if (aValue == pValue)
+                    repCounter++;
+                else
+                    repCounter = 1;
+
+                if(repCounter>=3)
                 {
-                    int iterations = 0;
-                    while(value==prevValue)
+                    if (changeRep)
                     {
-                        value = Random.Range(0, 3);
-                        iterations++;
-                        if (iterations > 25)
-                            value++;
+                        int iter = 0;
+                        while (aValue == pValue)
+                        {
+                            iter++;
+                            aValue = Random.Range(0, 3);
+                            if (iter > 25)
+                                aValue++;
+                        }
+                        if (!vertical)
+                            grid[i, j] = aValue;
+                        else
+                            grid[j, i] = aValue;
                     }
-                    if (!verticalCheck)
-                        grid[i, j] = value;
                     else
-                        grid[j, i] = value;
-
-                    repeatedCounter = 1;
+                    {
+                        if (!vertical)
+                        {
+                            Debug.Log((i - 2) + "-" + j);
+                            Debug.Log((i - 1) + "-" + j);
+                            Debug.Log(i + "-" + j);
+                        }
+                        else
+                        {
+                            Debug.Log(j + "-" + (i - 2));
+                            Debug.Log(j + "-" + (i - 1));
+                            Debug.Log(j + "-" + i);
+                        }
+                        DrawGrid();
+                        Erase3(i, j, vertical);
+                        DrawGrid();
+                    }
                     stillChanging = true;
+                    repCounter = 1;
                 }
-                prevValue = value;
+                pValue = aValue;
             }
+            repCounter = 1;
         }
         return stillChanging;
     }
+
+    //bool ReviewVerticalData(bool changeRep)
+    //{
+    //    int aValue;
+    //    int pValue = -1;
+    //    bool stillChanging = false;
+    //    int repCounter = 1;
+
+    //    for(int i=0;i<width;i++)
+    //    {
+    //        for(int j=0;j<height;j++)
+    //        {
+    //            aValue = grid[i, j];
+
+    //            if (aValue == pValue)
+    //                repCounter++;
+    //            else
+    //                repCounter = 1;
+
+    //            if (repCounter>=3)
+    //            {
+    //                if(changeRep)
+    //                {
+    //                    int iter = 0;
+    //                    while(aValue==pValue)
+    //                    {
+    //                        iter++;
+    //                        aValue = Random.Range(0, 3);
+    //                        if (iter > 25)
+    //                            aValue++;
+    //                    }
+    //                    grid[i, j] = aValue;
+    //                }
+    //                stillChanging = true;
+    //                repCounter = 1;
+    //            }
+    //            pValue = aValue;
+    //        }
+    //        repCounter = 1;
+    //    }
+    //    return stillChanging;
+    //}
 }

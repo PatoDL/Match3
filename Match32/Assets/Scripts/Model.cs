@@ -20,9 +20,9 @@ public class Model
     {
         grid = new int[width, height];
 
-        for (int j = 0; j < height; j++)
+        for(int i=0;i<width;i++)
         {
-            for (int i = 0; i < width; i++)
+            for(int j=0;j<height;j++)
             {
                 grid[i, j] = Random.Range(0, 4);
             }
