@@ -5,58 +5,80 @@ using GooglePlayGames;
 using GooglePlayGames.BasicApi;
 using UnityEngine.SocialPlatforms;
 
-//public class GooglePlayManager {
+public class GooglePlayManager : MonoBehaviour
+{
+    public static GooglePlayManager gpm;
 
-//    public static void Init()
-//    { 
-//        PlayGamesClientConfiguration config = new PlayGamesClientConfiguration.Builder()
-//        // enables saving game progress.
-//        .EnableSavedGames()
-//        // registers a callback to handle game invitations received while the game is not running.
+    void Awake()
+    {
+        if (gpm == null)
+        {
+            gpm = this;
+            DontDestroyOnLoad(this.gameObject);
+        }
+        else
+            Destroy(this.gameObject);
+    }
 
-//        // registers a callback for turn based match notifications received while the
-//        // game is not running.
+    bool loggedIn;
 
-//        // requests the email address of the player be available.
-//        // Will bring up a prompt for consent.
-//        .RequestEmail()
-//        // requests a server auth code be generated so it can be passed to an
-//        //  associated back end server application and exchanged for an OAuth token.
-//        .RequestServerAuthCode(false)
-//        // requests an ID token be generated.  This OAuth token can be used to
-//        //  identify the player to other services such as Firebase.
-//        .RequestIdToken()
-//        .Build();
+    void Start()
+    {
+        Init();
+    }
 
-//        PlayGamesPlatform.InitializeInstance(config);
-//    }
+    public void Init()
+    {
+        PlayGamesClientConfiguration config = new PlayGamesClientConfiguration.Builder().Build();
 
-//    void EnableDebugLog()
-//    {
-//        // recommended for debugging:
-//        PlayGamesPlatform.DebugLogEnabled = true;
-//    }
+        PlayGamesPlatform.InitializeInstance(config);
 
-//    public static void ActivatePlatform()
-//    {
-//        // Activate the //Google Play Games platform
-//        PlayGamesPlatform.Activate();
-//    }
+        PlayGamesPlatform.Activate();
+    }
 
-//    public static void SignIn()
-//    {
-//        Social.localUser.Authenticate((bool success) => {
-//            if (success)
-//                Debug.Log("yes");
-//            else
-//                Debug.Log("no");
-//        });
-//    }
+    public void ShowAchievements()
+    {
+        if (loggedIn)
+            Social.ShowAchievementsUI();
+    }
 
-//    public static void RevealAchievement()
-//    {
-//        Social.ReportProgress("CgkIw4zYz-ECEAIQAQ", 100.0f, (bool success) => {
-            
-//        });
-//    }
-//}
+    public void ShowLeaderboard()
+    {
+        if (loggedIn)
+            PlayGamesPlatform.Instance.ShowLeaderboardUI(GPGSIds.leaderboard_highscores);
+    }
+
+    public void UploadScore(int score)
+    {
+        if (loggedIn)
+        {
+            Social.ReportScore(score, GPGSIds.leaderboard_highscores, (bool success) =>
+            {
+                if (success)
+                    ShowLeaderboard();
+            });
+        }
+    }
+
+    public void UnlockAchievement()
+    {
+        if (loggedIn)
+        {
+            Social.ReportProgress(GPGSIds.achievement_100_puntos, 100.0f, (bool success) =>
+            {
+                if (success)
+                    ShowAchievements();
+            });
+        }
+    }
+
+    public void SetLoggedIn(bool log)
+    {
+        loggedIn = log;
+    }
+
+    public bool GetLoggedIn()
+    {
+        return loggedIn;
+    }
+}

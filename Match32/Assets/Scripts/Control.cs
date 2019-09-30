@@ -21,18 +21,6 @@ public class Control : MonoBehaviour
     public GameObject panel;
     View v;
 
-
-    public void points()
-    {
-        //GooglePlayManager.RevealAchievement();
-    }
-
-    private void Awake()
-    {
-        //GooglePlayManager.Init();
-        //GooglePlayManager.ActivatePlatform();
-    }
-
     void Start()
     {
         m = new Model();
@@ -50,8 +38,6 @@ public class Control : MonoBehaviour
         gridObjs = new GameObject[width, height];
 
         DrawGrid();
-
-        //GooglePlayManager.SignIn();
     }
 
     void DrawGrid()
@@ -256,6 +242,10 @@ public class Control : MonoBehaviour
                     score += 10;
                 }
             }
+        }
+        if(score>100)
+        {
+            GooglePlayManager.gpm.UnlockAchievement();
         }
     }
 
