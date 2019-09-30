@@ -54,8 +54,7 @@ public class GooglePlayManager : MonoBehaviour
         {
             Social.ReportScore(score, GPGSIds.leaderboard_highscores, (bool success) =>
             {
-                if (success)
-                    ShowLeaderboard();
+                ShowLeaderboard();
             });
         }
     }
@@ -66,10 +65,45 @@ public class GooglePlayManager : MonoBehaviour
         {
             Social.ReportProgress(GPGSIds.achievement_100_puntos, 100.0f, (bool success) =>
             {
-                if (success)
-                    ShowAchievements();
+                
             });
         }
+    }
+
+    public bool LogIn()
+    {
+        bool result = false;
+#if UNITY_ANDROID && !UNITY_EDITOR
+        Social.localUser.Authenticate((bool success) => 
+        {
+            if (success)
+            {
+                SetLoggedIn(true);
+                result = true;
+            }
+            else
+                result = false;
+        });
+#endif
+        return result;
+    }
+
+    public bool LogOut()
+    {
+#if UNITY_ANDROID && !UNITY_EDITOR
+        if (GetLoggedIn())
+        {
+            PlayGamesPlatform.Instance.SignOut();
+            SetLoggedIn(false);
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+#else
+        return false;
+#endif
     }
 
     public void SetLoggedIn(bool log)

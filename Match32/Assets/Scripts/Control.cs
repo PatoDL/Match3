@@ -3,16 +3,11 @@ using UnityEngine;
 
 public class Control : MonoBehaviour
 {
-    GameObject[,] gridObjs;
-
     public int width;
     public int height;
 
     public int score = 0;
-
-    public GameObject BaseGO;
-
-    public Sprite[] colours;
+    public float time = 120;
 
     int[,] grid;
 
@@ -25,39 +20,40 @@ public class Control : MonoBehaviour
     {
         m = new Model();
 
+        grid = m.GetGrid();
+
+        Restart();
+    }
+
+    public void Restart()
+    {
+        score = 0;
+
+        time = 120;
+
         m.InitData(width, height);
 
         grid = m.GetGrid();
 
-        while (ReviewData(true, true) || ReviewData(false, true)) ;
+        v = panel.GetComponent<View>();
 
         m.SetGrid(grid);
 
-        v = panel.GetComponent<View>();
+        v.ClearEmptyTiles(grid, width, height, false);
 
-        gridObjs = new GameObject[width, height];
+        
 
-        DrawGrid();
-    }
+        while (ReviewData(true, true) || ReviewData(false, true)) ;
 
-    void DrawGrid()
-    {
-        for (int i = 0; i < height; i++)
-        {
-            for (int j = 0; j < width; j++)
-            {
-                if (gridObjs[i, j] != null)
-                    Destroy(gridObjs[i, j]);
-            }
-        }
+        v.StartViewGrid(width, height);
 
-        for (int i = 0; i < height; i++)
-        {
-            for (int j = 0; j < width; j++)
-            {
-                gridObjs[i, j] = v.DrawTile(BaseGO, i, j, colours[grid[i, j]]);
-            }
-        }
+        v.ClearEmptyTiles(grid, width, height, true);
+
+        v.DrawNewTiles(grid, width, height, true);
+
+        canInteract = true;
+        selected1 = null;
+        selected2 = null;
     }
 
     GameObject selected1;
@@ -84,7 +80,7 @@ public class Control : MonoBehaviour
                 {
                     for (int j = 0; j < height; j++)
                     {
-                        if (hit.transform.gameObject == gridObjs[i, j])
+                        if (hit.transform.gameObject == v.GetViewGrid()[i, j])
                         {
                             selected1 = hit.transform.gameObject;
                             s1I = i;
@@ -105,16 +101,21 @@ public class Control : MonoBehaviour
                 {
                     for (int j = 0; j < height; j++)
                     {
-                        if (hit.transform.gameObject == gridObjs[i, j])
+                        if (hit.transform.gameObject == v.GetViewGrid()[i, j])
                         {
-                            selected2 = hit.transform.gameObject;
-                            s2I = i;
-                            s2J = j;
+                            if (((i == s1I) && (j == s1J + 1 || j == s1J - 1)) || ((j == s1J) && ((i == s1I + 1) || (i == s1I - 1))))
+                            {
+                                selected2 = hit.transform.gameObject;
+                                s2I = i;
+                                s2J = j;
 
-                            if (!ChangeTile(s1I, s1J, s2I, s2J))
-                                ChangeTile(s2I, s2J, s1I, s1J);
+                                if (!CheckIfCanChange(s1I, s1J, s2I, s2J))
+                                    CheckIfCanChange(s2I, s2J, s1I, s1J);
+                                else
+                                    PassData();
 
-                            break;
+                                break;
+                            }
                         }
                     }
                 }
@@ -139,7 +140,7 @@ public class Control : MonoBehaviour
                     {
                         for (int j = 0; j < height; j++)
                         {
-                            if (hit.transform.gameObject == gridObjs[i, j])
+                            if (hit.transform.gameObject == v.GetViewGrid()[i, j])
                             {
                                 selected1 = hit.transform.gameObject;
                                 s1I = i;
@@ -154,16 +155,19 @@ public class Control : MonoBehaviour
                     {
                         for (int j = 0; j < height; j++)
                         {
-                            if (hit.transform.gameObject == gridObjs[i, j])
+                            if (hit.transform.gameObject == v.GetViewGrid()[i, j])
                             {
-                                selected2 = hit.transform.gameObject;
-                                s2I = i;
-                                s2J = j;
-
-                                if (!ChangeTile(s1I, s1J, s2I, s2J))
-                                    ChangeTile(s2I, s2J, s1I, s1J);
-
-                                break;
+                                if (((i == s1I) && (j == s1J + 1 || j == s1J - 1)) || ((j == s1J) && ((i == s1I + 1) || (i == s1I - 1))))
+                                {
+                                    selected2 = hit.transform.gameObject;
+                                    s2I = i;
+                                    s2J = j;
+                               
+                                    if (!CheckIfCanChange(s1I, s1J, s2I, s2J))
+                                        CheckIfCanChange(s2I, s2J, s1I, s1J);
+                               
+                                    break;
+                                }
                             }
                         }
                     }
@@ -183,33 +187,28 @@ public class Control : MonoBehaviour
         {
             canInteract = false;
             PassData();
-            DrawGrid();
         }
         else
             canInteract = true;
+
+        time -= Time.deltaTime;
+        if(time<=0f)
+        {
+            time = 0f;
+            GooglePlayManager.gpm.UploadScore(score);
+            canInteract = false;
+        }
     }
 
-    bool ChangeTile(int i, int j, int i2, int j2)
+    bool CheckIfCanChange(int i, int j, int i2, int j2)
     {
         bool changed = false;
-
-        if (gridObjs[i, j] != null)
-        {
-            Destroy(gridObjs[i, j]);
-            gridObjs[i, j] = null;
-        }
-
-        if (gridObjs[i, j] != null)
-        {
-            Destroy(gridObjs[i2, j2]);
-            gridObjs[i2, j2] = null;
-        }
 
         int sValue = grid[i, j];
         grid[i, j] = grid[i2, j2];
         grid[i2, j2] = sValue;
 
-        DrawGrid();
+        v.ChangeTile(grid, width, height, i, j, i2, j2);
 
         bool hor = ReviewData(false, false);
         bool ver = ReviewData(true, false);
@@ -217,17 +216,22 @@ public class Control : MonoBehaviour
         return changed = (hor || ver);
     }
 
-    void Erase3(int i,int j, bool vertical)
+    bool Erase3(int i,int j, bool vertical,bool check)
     {
-        if(!vertical)
+        bool correctMatch = true;
+        if (!vertical)
         {
             for (int d = 0; d < 3; d++)
             {
-                if (gridObjs[i-d, j] != null && (i - d < width) && (i - d >= 0))
+                if (i - d >= 0 && i < width)
                 {
-                    Destroy(gridObjs[i - d, j]);
-                    gridObjs[i - d, j] = null;
-                    score += 10;
+                    if (!check)
+                        grid[i - d, j] = -1;
+                }
+                else
+                {
+                    correctMatch = false;
+                    break;
                 }
             }
         }
@@ -235,33 +239,35 @@ public class Control : MonoBehaviour
         {
             for (int d = 0; d < 3; d++)
             {
-                if (gridObjs[j, i - d] != null && (i-d < width) && (i - d >= 0))
+                if (i - d >= 0 && i < height)
                 {
-                    Destroy(gridObjs[j, i - d]);
-                    gridObjs[j, i - d] = null;
-                    score += 10;
+                    if (!check)
+                        grid[j, i - d] = -1;
+                }
+                else
+                {
+                    correctMatch = false;
+                    break;
                 }
             }
         }
-        if(score>100)
+
+        if(!check)
+        {
+            score += 10;
+            v.ClearEmptyTiles(grid, width, height, false);
+        }
+
+        if (score>100)
         {
             GooglePlayManager.gpm.UnlockAchievement();
         }
+
+        return correctMatch;
     }
 
     void PassData()
     {
-        for (int i = 0; i < width; i++)
-        {
-            for (int j = 0; j < height; j++)
-            {
-                if (gridObjs[i, j] == null)
-                {
-                    grid[i, j] = -1;
-                }
-            }
-        }
-
         for (int i = 0; i < width; i++)
         {
             for (int j = 0; j < height; j++)
@@ -275,6 +281,7 @@ public class Control : MonoBehaviour
                         {
                             grid[i, j] = grid[i, k];
                             grid[i, k] = -1;
+                            v.ClearEmptyTiles(grid, width, height, false);
                             break;
                         }
                         else
@@ -287,6 +294,8 @@ public class Control : MonoBehaviour
                 }
             }
         }
+
+        v.DrawNewTiles(grid, width, height,false);
     }
 
     bool ReviewData(bool vertical, bool changeRep)
@@ -334,6 +343,8 @@ public class Control : MonoBehaviour
                             grid[i, j] = aValue;
                         else
                             grid[j, i] = aValue;
+
+                        stillChanging = true;
                     }
                     else
                     {
@@ -349,9 +360,12 @@ public class Control : MonoBehaviour
                             Debug.Log(j + "-" + (i - 1));
                             Debug.Log(j + "-" + i);
                         }
-                        Erase3(i, j, vertical);
+                        if(Erase3(i, j, vertical,true))
+                        {
+                            Erase3(i, j, vertical, false);
+                            stillChanging = true;
+                        }
                     }
-                    stillChanging = true;
                     repCounter = 1;
                 }
                 pValue = aValue;

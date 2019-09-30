@@ -10,6 +10,8 @@ public class GameUI : MonoBehaviour
 {
     public Text scoreText;
 
+    public Text timeText;
+
     public Text statusText;
 
     public Control con;
@@ -17,8 +19,15 @@ public class GameUI : MonoBehaviour
     void Update()
     {
         scoreText.text = "Score: " + con.score;
+        timeText.text = "Time: " + (int)con.time;
+
         if (con.canInteract)
-            statusText.text = "Select 2 pieces to switch them and make a match!";
+            statusText.text = "Select 2 pieces to switch" + System.Environment.NewLine +
+                " them and make a match!";
+        else if(con.time <=0)
+        {
+            statusText.text = "Game Ended!" + System.Environment.NewLine + " press restart to play again";
+        }
         else
             statusText.text = "Processing, please wait...";
     }
@@ -27,33 +36,26 @@ public class GameUI : MonoBehaviour
 
     public void LogIn()
     {
-#if UNITY_ANDROID && !UNITY_EDITOR
-        Social.localUser.Authenticate((bool success) => 
+        if(GooglePlayManager.gpm.LogIn())
         {
-            if (success)
-            {
-                ShowLogResult("Logged In");
-                GooglePlayManager.gpm.SetLoggedIn(true);
-            }
-            else
-                ShowLogResult("Couldn't Log In");
-        });
-#endif
+            ShowLogResult("Logged In");
+        }
+        else
+        {
+            ShowLogResult("Couldn't Log In");
+        }
     }
 
     public void LogOut()
     {
-#if UNITY_ANDROID && !UNITY_EDITOR
-        if (GooglePlayManager.gpm.GetLoggedIn())
+        if (GooglePlayManager.gpm.LogOut())
         {
-            PlayGamesPlatform.Instance.SignOut();
             ShowLogResult("Logged Out");
         }
         else
         {
             ShowLogResult("Not Logged in");
         }
-#endif
     }
 
     void ShowLogResult(string result)
@@ -69,6 +71,16 @@ public class GameUI : MonoBehaviour
         }
     }
 
+    public void ShowAchievements()
+    {
+        GooglePlayManager.gpm.ShowAchievements();
+    }
+
+    public void ShowLeaderboard()
+    {
+        GooglePlayManager.gpm.ShowLeaderboard();
+    }
+
     void HideLogResult()
     {
         LogResult.gameObject.SetActive(false);
@@ -79,6 +91,11 @@ public class GameUI : MonoBehaviour
 #if UNITY_ANDROID && !UNITY_EDITOR
         GooglePlayManager.gpm.ShowLeaderboard();
 #endif
+    }
+
+    public void RestartGame()
+    {
+        con.Restart();
     }
 
     public void QuitGame()
