@@ -54,7 +54,7 @@ public class GooglePlayManager : MonoBehaviour
         {
             Social.ReportScore(score, GPGSIds.leaderboard_highscores, (bool success) =>
             {
-                ShowLeaderboard();
+                //ShowLeaderboard();
             });
         }
     }

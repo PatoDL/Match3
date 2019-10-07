@@ -16,6 +16,14 @@ public class Control : MonoBehaviour
     public GameObject panel;
     View v;
 
+    public AddManager am;
+
+    public AnalyticsManager anm;
+
+    public GameObject adPanel;
+
+    bool stopTime;
+
     void Start()
     {
         m = new Model();
@@ -27,9 +35,11 @@ public class Control : MonoBehaviour
 
     public void Restart()
     {
+        stopTime = false;
+
         score = 0;
 
-        time = 120;
+        time = 10;
 
         m.InitData(width, height);
 
@@ -191,13 +201,20 @@ public class Control : MonoBehaviour
         else
             canInteract = true;
 
-        time -= Time.deltaTime;
+        
         if(time<=0f)
         {
             time = 0f;
             GooglePlayManager.gpm.UploadScore(score);
+            am.UIWatchAd();
+            anm.TimeOut(score);
+            adPanel.SetActive(true);
+            time = 10;
             canInteract = false;
+            stopTime = true;
         }
+        else if(!stopTime)
+            time -= Time.deltaTime;
     }
 
     bool CheckIfCanChange(int i, int j, int i2, int j2)
